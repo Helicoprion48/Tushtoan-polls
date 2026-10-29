@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tushto Poll Tracker</title>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 
 <style>
@@ -135,7 +136,7 @@ main { padding: 24px 18px 44px; }
   flex-wrap: wrap;
 }
 
-select, .toggle {
+select, .toggle, input[type="number"] {
   font: inherit;
   color: var(--ink);
   border: 1px solid var(--line);
@@ -146,13 +147,26 @@ select, .toggle {
 
 .toggle { cursor: pointer; }
 
+.months-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: .88rem;
+  white-space: nowrap;
+}
+
+.months-control input {
+  width: 86px;
+}
+
 .toggle.active {
   background: var(--accent);
   color: white;
   border-color: var(--accent);
 }
 
-/* Multi-party selector */
+/* Multi-party picker */
 .party-picker {
   position: relative;
 }
@@ -216,7 +230,9 @@ select, .toggle {
   height: 10px;
 }
 
-.party-option span:last-child { overflow-wrap: anywhere; }
+.party-option span:last-child {
+  overflow-wrap: anywhere;
+}
 
 .chart-panel { padding: 18px 18px 12px; }
 
@@ -357,9 +373,12 @@ footer {
         </div>
       </div>
 
-      <button id="rangeBtn" class="toggle" hidden>
-        Last 13 months
-      </button>
+      <label id="monthsControl" class="months-control" hidden>
+        <span>Months shown</span>
+        <input id="monthsInput" type="number" min="1" max="999" value="13"
+               step="1" inputmode="numeric"
+               aria-label="Number of months to show">
+      </label>
     </div>
   </div>
 
@@ -438,6 +457,8 @@ const monthlyPartyPolls = [
   {month:"Oct 2026",BS:13,RC:77,SvT:40,MV:15,NS:16,L:7,UFT:77,FUC:12,RR:7,PUL:3,"BCB!":null,NEE25:null,X:null,TVT:15,NAPP:77,VB:7,Volt:45,FP:13,MM:null,PP:11,LVT:8,PPTU:1,RTFP:6,D26:null}
 ];
 
+/* Latest poll versus previous poll.
+   newest = Series 1, previous = Series 2. */
 const latestComparison = {
   newest: {
     SvT:41, BS:14, RC:74, UFT:74, NS:16, FUC:13, MV:18,
@@ -501,6 +522,7 @@ const monthlyBlocs = [
 
 /* ====================== END OF DATA SECTION ====================== */
 
+
 /* ================================================================
    CHART AND MENU LOGIC
    Normally you should not need to change this section.
@@ -511,20 +533,23 @@ const chartCanvas = document.getElementById("chart");
 const titleEl = document.getElementById("viewTitle");
 const noteEl = document.getElementById("chartNote");
 const legendEl = document.getElementById("customLegend");
+
 const partyPicker = document.getElementById("partyPicker");
 const partyPickerToggle = document.getElementById("partyPickerToggle");
 const partyPickerPanel = document.getElementById("partyPickerPanel");
 const partyCheckboxes = document.getElementById("partyCheckboxes");
 const selectAllPartiesButton = document.getElementById("selectAllParties");
 const clearAllPartiesButton = document.getElementById("clearAllParties");
-const rangeBtn = document.getElementById("rangeBtn");
+
+const monthsControl = document.getElementById("monthsControl");
+const monthsInput = document.getElementById("monthsInput");
 
 let currentView = "polls";
-let last13 = true;
 let chart = null;
 
-/* Start with RC selected; other parties can be ticked on or off. */
-const selectedPartyIds = new Set(["RC", "UFT", "NAPP", "SvT", "Volt"]);;
+/* Default selection: RC.
+   Replace these IDs to change the parties selected by default. */
+const selectedPartyIds = new Set([parties[0]?.id].filter(Boolean));
 
 const blocColors = {
   Left: "#d62828",
@@ -570,15 +595,19 @@ function makeChart(type, labels, datasets, opts = {}) {
   chart = new Chart(chartCanvas, {
     type,
     data: { labels, datasets },
+
     options: {
       responsive: true,
       maintainAspectRatio: false,
+
       interaction: {
         mode: "index",
         intersect: false
       },
+
       plugins: {
         legend: { display: false },
+
         tooltip: {
           callbacks: {
             label: context =>
@@ -586,9 +615,11 @@ function makeChart(type, labels, datasets, opts = {}) {
           }
         }
       },
+
       scales: {
         x: {
           grid: { display: false },
+
           ticks: {
             maxRotation: 45,
             minRotation: 0,
@@ -596,22 +627,27 @@ function makeChart(type, labels, datasets, opts = {}) {
             maxTicksLimit: 20
           }
         },
+
         y: {
           beginAtZero: true,
           grid: { color: "#edf0f5" },
+
           title: {
             display: !!opts.yTitle,
             text: opts.yTitle || ""
           }
         }
       },
+
       elements: {
         line: { borderWidth: 2.5 },
+
         point: {
           radius: type === "line" ? 2.5 : 3,
           hoverRadius: 5
         }
       },
+
       ...opts.options
     }
   });
@@ -624,10 +660,11 @@ function makeChart(type, labels, datasets, opts = {}) {
   );
 }
 
-/* The historical data uses "L" for Levitatie, while the latest
-   comparison table spells the party name out. */
+/* The historical data uses "L" for Levitatie.
+   The latest comparison table spells the party name out. */
 function comparisonValue(series, id) {
-  return series[id === "L" ? "Levitatie" : id];
+  const key = id === "L" ? "Levitatie" : id;
+  return series[key];
 }
 
 function renderPollComparison() {
@@ -656,6 +693,7 @@ function renderPollComparison() {
       categoryPercentage: .72,
       barPercentage: .85
     }),
+
     dataset("Previous poll", previous, "#6a63a6", {
       borderRadius: 5,
       categoryPercentage: .72,
@@ -663,16 +701,19 @@ function renderPollComparison() {
     })
   ], {
     yTitle: "Poll figure",
+
     options: {
       scales: {
         x: {
           grid: { display: false },
+
           ticks: {
             maxRotation: 55,
             minRotation: 0,
             autoSkip: false
           }
         },
+
         y: {
           beginAtZero: true,
           grid: { color: "#edf0f5" }
@@ -710,6 +751,7 @@ function renderElection() {
         barPercentage: .85
       }
     ),
+
     dataset(
       "Previous election",
       order.map(id => electionResults[id]),
@@ -722,16 +764,19 @@ function renderElection() {
     )
   ], {
     yTitle: "Poll figure / seats",
+
     options: {
       scales: {
         x: {
           grid: { display: false },
+
           ticks: {
             maxRotation: 55,
             minRotation: 0,
             autoSkip: false
           }
         },
+
         y: {
           beginAtZero: true,
           grid: { color: "#edf0f5" }
@@ -746,13 +791,36 @@ function renderElection() {
     "Add more results to electionResults in the DATA section.";
 }
 
+/* Read the requested month count. Default to 13 if the input is invalid. */
+function getRequestedMonths() {
+  const value = Number.parseInt(monthsInput.value, 10);
+
+  return Number.isInteger(value) && value > 0
+    ? Math.min(value, 999)
+    : 13;
+}
+
+/* Return only the most recent requested number of months. */
+function rowsForSelectedMonthCount(rows) {
+  return rows.slice(-getRequestedMonths());
+}
+
+function monthRangeDescription(rows, requestedMonths) {
+  if (rows.length < requestedMonths) {
+    return `Showing all ${rows.length} available monthly entries; ${requestedMonths} requested.`;
+  }
+
+  return `Showing the most recent ${rows.length} monthly entries.`;
+}
+
 function renderParties() {
   titleEl.textContent = "Party developments";
-  partyPicker.hidden = false;
-  rangeBtn.hidden = false;
 
-  let rows = monthlyPartyPolls;
-  if (last13) rows = rows.slice(-13);
+  partyPicker.hidden = false;
+  monthsControl.hidden = false;
+
+  const requestedMonths = getRequestedMonths();
+  const rows = rowsForSelectedMonthCount(monthlyPartyPolls);
 
   const selectedParties = parties.filter(
     party => selectedPartyIds.has(party.id)
@@ -781,26 +849,25 @@ function renderParties() {
 
   if (selectedParties.length === 0) {
     noteEl.textContent =
-      "No parties selected. Open Choose parties and tick at least one party.";
+      "No parties selected. Open Choose parties and tick at least one party to display its polling line.";
   } else {
     noteEl.textContent =
       `Showing ${selectedParties.length} selected ` +
       `${selectedParties.length === 1 ? "party" : "parties"}. ` +
-      "Use Choose parties to change the lines. Smooth curves are enabled; " +
-      "missing values remain gaps. " +
-      (last13
-        ? "Showing the last 13 available monthly entries."
-        : "Showing all available monthly entries.");
+      "Tick or untick parties in Choose parties to change the lines. " +
+      "Smooth curves are enabled; missing values remain gaps. " +
+      monthRangeDescription(rows, requestedMonths);
   }
 }
 
 function renderBlocs() {
   titleEl.textContent = "Developments: left, centre & right";
-  partyPicker.hidden = true;
-  rangeBtn.hidden = false;
 
-  let rows = monthlyBlocs;
-  if (last13) rows = rows.slice(-13);
+  partyPicker.hidden = true;
+  monthsControl.hidden = false;
+
+  const requestedMonths = getRequestedMonths();
+  const rows = rowsForSelectedMonthCount(monthlyBlocs);
 
   const definitions = [
     ["Left", blocColors.Left],
@@ -832,9 +899,7 @@ function renderBlocs() {
 
   noteEl.textContent =
     "Bloc totals from your supplied table. " +
-    (last13
-      ? "Showing the last 13 available monthly entries."
-      : "Showing all available monthly entries.") +
+    monthRangeDescription(rows, requestedMonths) +
     " The current source data ends in September 2026.";
 }
 
@@ -848,14 +913,14 @@ function render() {
 
   if (currentView === "polls") {
     partyPicker.hidden = true;
-    rangeBtn.hidden = true;
+    monthsControl.hidden = true;
     closePartyPicker();
     renderPollComparison();
   }
 
   if (currentView === "election") {
     partyPicker.hidden = true;
-    rangeBtn.hidden = true;
+    monthsControl.hidden = true;
     closePartyPicker();
     renderElection();
   }
@@ -866,16 +931,10 @@ function render() {
 
   if (currentView === "blocs") {
     partyPicker.hidden = true;
-    rangeBtn.hidden = false;
+    monthsControl.hidden = false;
     closePartyPicker();
     renderBlocs();
   }
-
-  rangeBtn.textContent = last13
-    ? "Show all months"
-    : "Last 13 months";
-
-  rangeBtn.classList.toggle("active", last13);
 }
 
 function populatePartyPicker() {
@@ -906,9 +965,7 @@ function populatePartyPicker() {
 
     const swatch = document.createElement("i");
     swatch.className = "swatch";
-    swatch.style.backgroundColor = party.color.startsWith("#")
-      ? party.color
-      : `#${party.color}`;
+    swatch.style.backgroundColor = party.color;
 
     const name = document.createElement("span");
     name.textContent = party.name;
@@ -933,7 +990,7 @@ function closePartyPicker() {
   partyPickerToggle.setAttribute("aria-expanded", "false");
 }
 
-/* Main menu */
+/* Main menu buttons */
 document.querySelectorAll(".menu-btn").forEach(button => {
   button.addEventListener("click", () => {
     currentView = button.dataset.view;
@@ -941,9 +998,10 @@ document.querySelectorAll(".menu-btn").forEach(button => {
   });
 });
 
-/* Open or close the party selector */
+/* Open or close the multi-party selector */
 partyPickerToggle.addEventListener("click", () => {
   const willOpen = partyPickerPanel.hidden;
+
   partyPickerPanel.hidden = !willOpen;
   partyPickerToggle.setAttribute("aria-expanded", String(willOpen));
 });
@@ -951,6 +1009,7 @@ partyPickerToggle.addEventListener("click", () => {
 /* Select all parties */
 selectAllPartiesButton.addEventListener("click", () => {
   parties.forEach(party => selectedPartyIds.add(party.id));
+
   populatePartyPicker();
 
   if (currentView === "parties") {
@@ -958,9 +1017,10 @@ selectAllPartiesButton.addEventListener("click", () => {
   }
 });
 
-/* Clear the selection */
+/* Clear the party selection */
 clearAllPartiesButton.addEventListener("click", () => {
   selectedPartyIds.clear();
+
   populatePartyPicker();
 
   if (currentView === "parties") {
@@ -968,20 +1028,33 @@ clearAllPartiesButton.addEventListener("click", () => {
   }
 });
 
-/* Click outside the picker to close it */
+/* Close the dropdown when clicking outside it */
 document.addEventListener("click", event => {
   if (!partyPicker.contains(event.target)) {
     closePartyPicker();
   }
 });
 
-/* Last-13-month filter */
-rangeBtn.addEventListener("click", () => {
-  last13 = !last13;
-  render();
+/* Update the charts when the month count changes.
+   The standard is 13 months; the maximum is 999. */
+monthsInput.addEventListener("change", () => {
+  const value = Number.parseInt(monthsInput.value, 10);
+
+  monthsInput.value = Number.isInteger(value) && value > 0
+    ? Math.min(value, 999)
+    : 13;
+
+  if (currentView === "parties") {
+    renderParties();
+  }
+
+  if (currentView === "blocs") {
+    renderBlocs();
+  }
 });
 
-/* Start the website */
+/* Start the website with 13 months shown by default. */
+monthsInput.value = "13";
 populatePartyPicker();
 render();
 </script>
