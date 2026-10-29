@@ -688,18 +688,18 @@ function renderPollComparison() {
   );
 
   makeChart("bar", labels, [
-    dataset("Previous poll", previous, "#6a63a6", {
-      borderRadius: 5,
-      categoryPercentage: .72,
-      barPercentage: .85
-    }),
+  dataset("Previous poll", previous, "#6a63a6", {
+    borderRadius: 5,
+    categoryPercentage: .72,
+    barPercentage: .85
+  }),
 
-    dataset("Newest poll", newest, "#ff9a0a", {
-      borderRadius: 5,
-      categoryPercentage: .72,
-      barPercentage: .85
-    })
-  ], {
+  dataset("Newest poll", newest, "#ff9a0a", {
+    borderRadius: 5,
+    categoryPercentage: .72,
+    barPercentage: .85
+  })
+], {
     yTitle: "Poll figure",
 
     options: {
@@ -738,29 +738,29 @@ function renderElection() {
 
   const labels = order.map(id => partyById[id]?.name || id);
 
-  makeChart("bar", labels, [
-    dataset(
-      "Previous election",
-      order.map(id => electionResults[id]),
-      "#6a63a6",
-      {
-        borderRadius: 5,
-        categoryPercentage: .72,
-        barPercentage: .85
-      }
-    ),
+makeChart("bar", labels, [
+  dataset(
+    "Previous election",
+    order.map(id => electionResults[id]),
+    "#6a63a6",
+    {
+      borderRadius: 5,
+      categoryPercentage: .72,
+      barPercentage: .85
+    }
+  ),
 
-    dataset(
-      "Newest poll",
-      order.map(id => comparisonValue(latestComparison.newest, id)),
-      "#ff9a0a",
-      {
-        borderRadius: 5,
-        categoryPercentage: .72,
-        barPercentage: .85
-      }
-    )
-  ], {
+  dataset(
+    "Newest poll",
+    order.map(id => comparisonValue(latestComparison.newest, id)),
+    "#ff9a0a",
+    {
+      borderRadius: 5,
+      categoryPercentage: .72,
+      barPercentage: .85
+    }
+  )
+], {
     yTitle: "Poll figure / seats",
 
     options: {
