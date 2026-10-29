@@ -4,8 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tushto Poll Tracker</title>
-
-<!-- Chart.js draws the charts -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 
 <style>
@@ -154,6 +152,72 @@ select, .toggle {
   border-color: var(--accent);
 }
 
+/* Multi-party selector */
+.party-picker {
+  position: relative;
+}
+
+.party-picker-panel {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(390px, calc(100vw - 36px));
+  max-height: 360px;
+  overflow: auto;
+  padding: 12px;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 12px 30px #16213a20;
+}
+
+.party-picker-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.party-picker-actions button {
+  border: 1px solid var(--line);
+  background: #f7f9fc;
+  border-radius: 8px;
+  padding: 6px 9px;
+  font: inherit;
+  font-size: .82rem;
+  cursor: pointer;
+}
+
+.party-checkboxes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px 10px;
+}
+
+.party-option {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 7px;
+  padding: 6px 3px;
+  font-size: .88rem;
+  cursor: pointer;
+}
+
+.party-option input {
+  accent-color: var(--accent);
+  flex: none;
+}
+
+.party-option .swatch {
+  width: 10px;
+  height: 10px;
+}
+
+.party-option span:last-child { overflow-wrap: anywhere; }
+
 .chart-panel { padding: 18px 18px 12px; }
 
 .chart-wrap {
@@ -218,7 +282,10 @@ footer {
 [hidden] { display: none !important; }
 
 @media (max-width: 850px) {
-  .menu-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .menu-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .chart-wrap { height: 420px; }
 }
 
@@ -274,10 +341,21 @@ footer {
     <h2 id="viewTitle">Newest poll vs. previous poll</h2>
 
     <div class="controls">
-      <label id="partyLabel" hidden>
-        Party
-        <select id="partySelect"></select>
-      </label>
+      <div id="partyPicker" class="party-picker" hidden>
+        <button id="partyPickerToggle" class="toggle" type="button"
+                aria-expanded="false" aria-controls="partyPickerPanel">
+          Choose parties
+        </button>
+
+        <div id="partyPickerPanel" class="party-picker-panel" hidden>
+          <div class="party-picker-actions">
+            <button id="selectAllParties" type="button">Select all</button>
+            <button id="clearAllParties" type="button">Clear all</button>
+          </div>
+
+          <div id="partyCheckboxes" class="party-checkboxes"></div>
+        </div>
+      </div>
 
       <button id="rangeBtn" class="toggle" hidden>
         Last 13 months
@@ -300,8 +378,9 @@ footer {
       Edit the DATA section in the JavaScript. Add a month to
       <code>monthlyPartyPolls</code> and/or <code>monthlyBlocs</code>.
       Add parties to <code>parties</code>, including their colours and
-      political blocs. Update <code>latestComparison</code> and
-      <code>electionResults</code> when you have new figures.
+      political blocs. In Party developments, use <strong>Choose parties</strong>
+      to show several party lines together. Update <code>latestComparison</code>
+      and <code>electionResults</code> when you have new figures.
       Use <code>null</code> for missing figures.
     </p>
   </section>
@@ -336,7 +415,7 @@ const parties = [
   {id:"RTFP",name:"RTFP",color:"#a17001",bloc:"Right"},
   {id:"PUL",name:"PUL",color:"#ffff00",bloc:"Right"},
   {id:"PPTU",name:"PPTU",color:"#696969",bloc:"Centre"},
-  {id:"D26", name:"D26", color:"01b914", bloc:"Centre"},
+  {id:"D26",name:"D26",color:"#01b914",bloc:"Centre"},
   {id:"L",name:"Levitatie",color:"#ca2800",bloc:"Left"},
   {id:"FP",name:"FP",color:"#ff5f62",bloc:"Left"},
   {id:"LVT",name:"LVT",color:"#00ab6a",bloc:"Right"},
@@ -348,8 +427,7 @@ const parties = [
 ];
 
 /* Historical party polls.
-   Each row is one month. Change the month and figures as needed.
-   A null value means that no figure was supplied. */
+   Each row is one month. Missing figures are null. */
 const monthlyPartyPolls = [
   {month:"Mar 2025",BS:81,RC:69,SvT:53,MV:44,NS:20,L:72,UFT:null,FUC:16,RR:null,PUL:24,"BCB!":18,NEE25:null,X:38,TVT:null,NAPP:null,VB:null,Volt:null,FP:null,MM:null,PP:null,LVT:null,PPTU:null,RTFP:null,D26:null},
   {month:"Apr 2025",BS:78,RC:73,SvT:49,MV:44,NS:34,L:63,UFT:null,FUC:22,RR:null,PUL:25,"BCB!":16,NEE25:null,X:36,TVT:null,NAPP:null,VB:null,Volt:null,FP:null,MM:null,PP:null,LVT:null,PPTU:null,RTFP:null,D26:null},
@@ -373,9 +451,6 @@ const monthlyPartyPolls = [
   {month:"Oct 2026",BS:13,RC:77,SvT:40,MV:15,NS:16,L:7,UFT:77,FUC:12,RR:7,PUL:3,"BCB!":null,NEE25:null,X:null,TVT:15,NAPP:77,VB:7,Volt:45,FP:13,MM:null,PP:11,LVT:8,PPTU:1,RTFP:6,D26:null}
 ];
 
-/* Newest poll versus previous poll.
-   The values are entered in the same order as your supplied comparison:
-   newest = Series 1, previous = Series 2. */
 const latestComparison = {
   newest: {
     SvT:41, BS:14, RC:74, UFT:74, NS:16, FUC:13, MV:18,
@@ -389,8 +464,7 @@ const latestComparison = {
   }
 };
 
-/* Previous election seat totals.
-   null means the election figure has not been entered yet. */
+/* Previous election seat totals */
 const electionResults = {
   RC:69,
   UFT:63,
@@ -412,10 +486,10 @@ const electionResults = {
   FP:6,
   LVT:4,
   VB:3,
-  "BCB!":2,
+  "BCB!":2
 };
 
-/* Left, centre and right polling totals. */
+/* Left, centre and right polling totals */
 const monthlyBlocs = [
   {month:"Mar 2025",Left:295,Centre:60,Right:109},
   {month:"Apr 2025",Left:297,Centre:66,Right:87},
@@ -440,7 +514,6 @@ const monthlyBlocs = [
 
 /* ====================== END OF DATA SECTION ====================== */
 
-
 /* ================================================================
    CHART AND MENU LOGIC
    Normally you should not need to change this section.
@@ -451,13 +524,20 @@ const chartCanvas = document.getElementById("chart");
 const titleEl = document.getElementById("viewTitle");
 const noteEl = document.getElementById("chartNote");
 const legendEl = document.getElementById("customLegend");
-const partySelect = document.getElementById("partySelect");
-const partyLabel = document.getElementById("partyLabel");
+const partyPicker = document.getElementById("partyPicker");
+const partyPickerToggle = document.getElementById("partyPickerToggle");
+const partyPickerPanel = document.getElementById("partyPickerPanel");
+const partyCheckboxes = document.getElementById("partyCheckboxes");
+const selectAllPartiesButton = document.getElementById("selectAllParties");
+const clearAllPartiesButton = document.getElementById("clearAllParties");
 const rangeBtn = document.getElementById("rangeBtn");
 
 let currentView = "polls";
 let last13 = false;
 let chart = null;
+
+/* Start with RC selected; other parties can be ticked on or off. */
+const selectedPartyIds = new Set([parties[0]?.id].filter(Boolean));
 
 const blocColors = {
   Left: "#d62828",
@@ -503,7 +583,6 @@ function makeChart(type, labels, datasets, opts = {}) {
   chart = new Chart(chartCanvas, {
     type,
     data: { labels, datasets },
-
     options: {
       responsive: true,
       maintainAspectRatio: false,
@@ -511,10 +590,8 @@ function makeChart(type, labels, datasets, opts = {}) {
         mode: "index",
         intersect: false
       },
-
       plugins: {
         legend: { display: false },
-
         tooltip: {
           callbacks: {
             label: context =>
@@ -522,7 +599,6 @@ function makeChart(type, labels, datasets, opts = {}) {
           }
         }
       },
-
       scales: {
         x: {
           grid: { display: false },
@@ -533,7 +609,6 @@ function makeChart(type, labels, datasets, opts = {}) {
             maxTicksLimit: 20
           }
         },
-
         y: {
           beginAtZero: true,
           grid: { color: "#edf0f5" },
@@ -543,7 +618,6 @@ function makeChart(type, labels, datasets, opts = {}) {
           }
         }
       },
-
       elements: {
         line: { borderWidth: 2.5 },
         point: {
@@ -551,7 +625,6 @@ function makeChart(type, labels, datasets, opts = {}) {
           hoverRadius: 5
         }
       },
-
       ...opts.options
     }
   });
@@ -564,11 +637,10 @@ function makeChart(type, labels, datasets, opts = {}) {
   );
 }
 
-/* The historical dataset uses "L" for Levitatie.
-   The latest comparison table spells out "Levitatie". */
+/* The historical data uses "L" for Levitatie, while the latest
+   comparison table spells the party name out. */
 function comparisonValue(series, id) {
-  const key = id === "L" ? "Levitatie" : id;
-  return series[key];
+  return series[id === "L" ? "Levitatie" : id];
 }
 
 function renderPollComparison() {
@@ -597,7 +669,6 @@ function renderPollComparison() {
       categoryPercentage: .72,
       barPercentage: .85
     }),
-
     dataset("Previous poll", previous, "#6a63a6", {
       borderRadius: 5,
       categoryPercentage: .72,
@@ -605,7 +676,6 @@ function renderPollComparison() {
     })
   ], {
     yTitle: "Poll figure",
-
     options: {
       scales: {
         x: {
@@ -616,7 +686,6 @@ function renderPollComparison() {
             autoSkip: false
           }
         },
-
         y: {
           beginAtZero: true,
           grid: { color: "#edf0f5" }
@@ -636,7 +705,7 @@ function renderElection() {
   const order = parties
     .map(p => p.id)
     .filter(id =>
-      latestComparison.newest[id] !== undefined &&
+      comparisonValue(latestComparison.newest, id) !== undefined &&
       electionResults[id] !== null &&
       electionResults[id] !== undefined
     );
@@ -646,7 +715,7 @@ function renderElection() {
   makeChart("bar", labels, [
     dataset(
       "Newest poll",
-      order.map(id => latestComparison.newest[id]),
+      order.map(id => comparisonValue(latestComparison.newest, id)),
       "#ff9a0a",
       {
         borderRadius: 5,
@@ -654,7 +723,6 @@ function renderElection() {
         barPercentage: .85
       }
     ),
-
     dataset(
       "Previous election",
       order.map(id => electionResults[id]),
@@ -667,7 +735,6 @@ function renderElection() {
     )
   ], {
     yTitle: "Poll figure / seats",
-
     options: {
       scales: {
         x: {
@@ -678,7 +745,6 @@ function renderElection() {
             autoSkip: false
           }
         },
-
         y: {
           beginAtZero: true,
           grid: { color: "#edf0f5" }
@@ -695,55 +761,59 @@ function renderElection() {
 
 function renderParties() {
   titleEl.textContent = "Party developments";
-  partyLabel.hidden = false;
+  partyPicker.hidden = false;
   rangeBtn.hidden = false;
 
-  const id = partySelect.value || parties[0].id;
-  const party = partyById[id] || {
-    name: id,
-    color: "#2459d3"
-  };
-
   let rows = monthlyPartyPolls;
+  if (last13) rows = rows.slice(-13);
 
-  if (last13) {
-    rows = rows.slice(-13);
-  }
-
-  const values = rows.map(row =>
-    row[id] === undefined ? null : row[id]
+  const selectedParties = parties.filter(
+    party => selectedPartyIds.has(party.id)
   );
 
-  makeChart("line", rows.map(row => row.month), [
-    dataset(party.name, values, party.color, {
+  const labels = rows.map(row => row.month);
+
+  const datasets = selectedParties.map(party => {
+    const values = rows.map(row =>
+      row[party.id] === undefined ? null : row[party.id]
+    );
+
+    return dataset(party.name, values, party.color, {
       tension: .38,
       cubicInterpolationMode: "monotone",
       spanGaps: false,
       pointBackgroundColor: party.color,
+      pointBorderColor: party.color,
       fill: false
-    })
-  ], {
+    });
+  });
+
+  makeChart("line", labels, datasets, {
     yTitle: "Poll figure"
   });
 
-  noteEl.textContent =
-    `Monthly polling for ${party.name}. Smooth curves are enabled. ` +
-    "Missing values remain gaps rather than being invented. " +
-    (last13
-      ? "Showing the last 13 available monthly entries."
-      : "Showing all available monthly entries.");
+  if (selectedParties.length === 0) {
+    noteEl.textContent =
+      "No parties selected. Open Choose parties and tick at least one party.";
+  } else {
+    noteEl.textContent =
+      `Showing ${selectedParties.length} selected ` +
+      `${selectedParties.length === 1 ? "party" : "parties"}. ` +
+      "Use Choose parties to change the lines. Smooth curves are enabled; " +
+      "missing values remain gaps. " +
+      (last13
+        ? "Showing the last 13 available monthly entries."
+        : "Showing all available monthly entries.");
+  }
 }
 
 function renderBlocs() {
   titleEl.textContent = "Developments: left, centre & right";
-  partyLabel.hidden = true;
+  partyPicker.hidden = true;
   rangeBtn.hidden = false;
 
   let rows = monthlyBlocs;
-
-  if (last13) {
-    rows = rows.slice(-13);
-  }
+  if (last13) rows = rows.slice(-13);
 
   const definitions = [
     ["Left", blocColors.Left],
@@ -790,14 +860,16 @@ function render() {
   });
 
   if (currentView === "polls") {
-    partyLabel.hidden = true;
+    partyPicker.hidden = true;
     rangeBtn.hidden = true;
+    closePartyPicker();
     renderPollComparison();
   }
 
   if (currentView === "election") {
-    partyLabel.hidden = true;
+    partyPicker.hidden = true;
     rangeBtn.hidden = true;
+    closePartyPicker();
     renderElection();
   }
 
@@ -806,6 +878,9 @@ function render() {
   }
 
   if (currentView === "blocs") {
+    partyPicker.hidden = true;
+    rangeBtn.hidden = false;
+    closePartyPicker();
     renderBlocs();
   }
 
@@ -816,18 +891,62 @@ function render() {
   rangeBtn.classList.toggle("active", last13);
 }
 
-function populatePartySelect() {
-  partySelect.innerHTML = "";
+function populatePartyPicker() {
+  partyCheckboxes.innerHTML = "";
 
   parties.forEach(party => {
-    const option = document.createElement("option");
-    option.value = party.id;
-    option.textContent = party.name;
-    partySelect.appendChild(option);
+    const label = document.createElement("label");
+    label.className = "party-option";
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.value = party.id;
+    checkbox.checked = selectedPartyIds.has(party.id);
+
+    checkbox.addEventListener("change", () => {
+      if (checkbox.checked) {
+        selectedPartyIds.add(party.id);
+      } else {
+        selectedPartyIds.delete(party.id);
+      }
+
+      updatePartyPickerButton();
+
+      if (currentView === "parties") {
+        renderParties();
+      }
+    });
+
+    const swatch = document.createElement("i");
+    swatch.className = "swatch";
+    swatch.style.backgroundColor = party.color.startsWith("#")
+      ? party.color
+      : `#${party.color}`;
+
+    const name = document.createElement("span");
+    name.textContent = party.name;
+
+    label.append(checkbox, swatch, name);
+    partyCheckboxes.appendChild(label);
   });
+
+  updatePartyPickerButton();
 }
 
-/* Menu buttons */
+function updatePartyPickerButton() {
+  const count = selectedPartyIds.size;
+
+  partyPickerToggle.textContent = count === 1
+    ? "Choose parties (1 selected) ▾"
+    : `Choose parties (${count} selected) ▾`;
+}
+
+function closePartyPicker() {
+  partyPickerPanel.hidden = true;
+  partyPickerToggle.setAttribute("aria-expanded", "false");
+}
+
+/* Main menu */
 document.querySelectorAll(".menu-btn").forEach(button => {
   button.addEventListener("click", () => {
     currentView = button.dataset.view;
@@ -835,8 +954,39 @@ document.querySelectorAll(".menu-btn").forEach(button => {
   });
 });
 
-/* Party selector */
-partySelect.addEventListener("change", render);
+/* Open or close the party selector */
+partyPickerToggle.addEventListener("click", () => {
+  const willOpen = partyPickerPanel.hidden;
+  partyPickerPanel.hidden = !willOpen;
+  partyPickerToggle.setAttribute("aria-expanded", String(willOpen));
+});
+
+/* Select all parties */
+selectAllPartiesButton.addEventListener("click", () => {
+  parties.forEach(party => selectedPartyIds.add(party.id));
+  populatePartyPicker();
+
+  if (currentView === "parties") {
+    renderParties();
+  }
+});
+
+/* Clear the selection */
+clearAllPartiesButton.addEventListener("click", () => {
+  selectedPartyIds.clear();
+  populatePartyPicker();
+
+  if (currentView === "parties") {
+    renderParties();
+  }
+});
+
+/* Click outside the picker to close it */
+document.addEventListener("click", event => {
+  if (!partyPicker.contains(event.target)) {
+    closePartyPicker();
+  }
+});
 
 /* Last-13-month filter */
 rangeBtn.addEventListener("click", () => {
@@ -845,7 +995,7 @@ rangeBtn.addEventListener("click", () => {
 });
 
 /* Start the website */
-populatePartySelect();
+populatePartyPicker();
 render();
 </script>
 </body>
