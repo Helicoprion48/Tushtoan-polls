@@ -688,15 +688,13 @@ function renderPollComparison() {
   );
 
   makeChart("bar", labels, [
-    dataset("Newest poll", newest, "#ff9a0a", {
-      order: 1,
+    dataset("Previous poll", previous, "#6a63a6", {
       borderRadius: 5,
       categoryPercentage: .72,
       barPercentage: .85
     }),
 
-    dataset("Previous poll", previous, "#6a63a6", {
-      order: 2,
+    dataset("Newest poll", newest, "#ff9a0a", {
       borderRadius: 5,
       categoryPercentage: .72,
       barPercentage: .85
@@ -723,8 +721,9 @@ function renderPollComparison() {
   });
 
   noteEl.textContent =
-    "The newest poll is shown first (left); the previous poll is shown second (right).";
+    "Blue-grey bars show the previous poll; orange bars show the newest poll.";
 }
+
 
 function renderElection() {
   titleEl.textContent = "Newest poll vs. previous election";
@@ -741,11 +740,10 @@ function renderElection() {
 
   makeChart("bar", labels, [
     dataset(
-      "Newest poll",
-      order.map(id => comparisonValue(latestComparison.newest, id)),
-      "#ff9a0a",
+      "Previous election",
+      order.map(id => electionResults[id]),
+      "#6a63a6",
       {
-        order: 1,
         borderRadius: 5,
         categoryPercentage: .72,
         barPercentage: .85
@@ -753,11 +751,10 @@ function renderElection() {
     ),
 
     dataset(
-      "Previous election",
-      order.map(id => electionResults[id]),
-      "#6a63a6",
+      "Newest poll",
+      order.map(id => comparisonValue(latestComparison.newest, id)),
+      "#ff9a0a",
       {
-        order: 2,
         borderRadius: 5,
         categoryPercentage: .72,
         barPercentage: .85
@@ -785,9 +782,9 @@ function renderElection() {
   });
 
   noteEl.textContent =
-    "The newest poll is shown first (left); the previous election is shown second (right). Polling figures and election seats are different measures.";
-}
-/* Read the requested month count. Default to 13 if the input is invalid. */
+    "Blue-grey bars show the previous election; orange bars show the newest poll. " +
+    "Polling figures and election seats are different measures.";
+}/* Read the requested month count. Default to 13 if the input is invalid. */
 function getRequestedMonths() {
   const value = Number.parseInt(monthsInput.value, 10);
 
