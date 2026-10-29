@@ -524,7 +524,7 @@ let last13 = true;
 let chart = null;
 
 /* Start with RC selected; other parties can be ticked on or off. */
-const selectedPartyIds = new Set([parties[0]?.id].filter(Boolean));
+const selectedPartyIds = new Set(["RC", "UFT", "NAPP", "SvT", "Volt"]);;
 
 const blocColors = {
   Left: "#d62828",
