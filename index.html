@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tushto Poll Tracker</title>
+
+<!-- Chart.js draws the charts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+
+<style>
+:root {
+  --bg: #f3f5f8;
+  --panel: #ffffff;
+  --ink: #172033;
+  --muted: #667085;
+  --line: #e2e7ef;
+  --accent: #2459d3;
+  --accent-light: #e8efff;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.5 system-ui, sans-serif;
+}
+
+header {
+  background: linear-gradient(120deg, #142650, #2459d3);
+  color: white;
+  padding: 28px 22px 32px;
+}
+
+.head-inner, main {
+  max-width: 1180px;
+  margin: auto;
+}
+
+header h1 {
+  margin: 0;
+  font-size: clamp(1.65rem, 4vw, 2.4rem);
+  letter-spacing: -.04em;
+}
+
+header p {
+  margin: 7px 0 0;
+  color: #dce6ff;
+}
+
+main { padding: 24px 18px 44px; }
+
+.menu-panel, .chart-panel, .info-panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: 0 12px 32px #16213a0b;
+}
+
+.menu-panel {
+  padding: 20px;
+  margin-bottom: 18px;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  font-size: .72rem;
+  font-weight: 800;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.menu-btn {
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: white;
+  padding: 14px 13px;
+  cursor: pointer;
+  color: var(--ink);
+  font: inherit;
+  transition: .15s;
+}
+
+.menu-btn strong {
+  display: block;
+  font-size: .95rem;
+  line-height: 1.3;
+}
+
+.menu-btn span {
+  display: block;
+  color: var(--muted);
+  font-size: .8rem;
+  margin-top: 6px;
+}
+
+.menu-btn:hover {
+  border-color: #9bb5fa;
+  transform: translateY(-1px);
+}
+
+.menu-btn.active {
+  background: var(--accent-light);
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 20px 0 14px;
+}
+
+.toolbar h2 {
+  font-size: 1.3rem;
+  margin: 0;
+  letter-spacing: -.025em;
+}
+
+.controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+select, .toggle {
+  font: inherit;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: white;
+  padding: 9px 12px;
+}
+
+.toggle { cursor: pointer; }
+
+.toggle.active {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.chart-panel { padding: 18px 18px 12px; }
+
+.chart-wrap {
+  position: relative;
+  height: 480px;
+  width: 100%;
+}
+
+.chart-note {
+  color: var(--muted);
+  font-size: .86rem;
+  margin: 10px 2px 3px;
+}
+
+.legend {
+  display: flex;
+  gap: 8px 14px;
+  flex-wrap: wrap;
+  margin: 14px 2px 4px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .82rem;
+  color: #39445a;
+}
+
+.swatch {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  display: inline-block;
+  flex: none;
+}
+
+.info-panel {
+  margin-top: 18px;
+  padding: 18px;
+}
+
+.info-panel h3 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+}
+
+.info-panel p {
+  margin: 0;
+  color: var(--muted);
+  font-size: .9rem;
+}
+
+footer {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 18px 28px;
+  color: var(--muted);
+  font-size: .82rem;
+}
+
+[hidden] { display: none !important; }
+
+@media (max-width: 850px) {
+  .menu-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .chart-wrap { height: 420px; }
+}
+
+@media (max-width: 520px) {
+  main { padding: 16px 10px 30px; }
+  .menu-panel { padding: 14px; }
+  .menu-grid { grid-template-columns: 1fr 1fr; gap: 7px; }
+  .menu-btn { padding: 11px 10px; }
+  .chart-panel { padding: 12px; }
+  .chart-wrap { height: 380px; }
+  .toolbar { align-items: flex-start; }
+  .toolbar h2 { width: 100%; }
+}
+</style>
+</head>
+
+<body>
+<header>
+  <div class="head-inner">
+    <h1>Tushto Poll Tracker</h1>
+    <p>Explore party polling, election comparisons and political blocs over time.</p>
+  </div>
+</header>
+
+<main>
+  <section class="menu-panel">
+    <p class="eyebrow">Choose a view</p>
+
+    <div class="menu-grid">
+      <button class="menu-btn active" data-view="polls">
+        <strong>Newest vs. previous poll</strong>
+        <span>Compare the latest two party polls</span>
+      </button>
+
+      <button class="menu-btn" data-view="election">
+        <strong>Newest poll vs. election</strong>
+        <span>Compare polling with the previous election</span>
+      </button>
+
+      <button class="menu-btn" data-view="parties">
+        <strong>Party developments</strong>
+        <span>Track each party across the months</span>
+      </button>
+
+      <button class="menu-btn" data-view="blocs">
+        <strong>Left, centre &amp; right</strong>
+        <span>Track political-bloc totals over time</span>
+      </button>
+    </div>
+  </section>
+
+  <div class="toolbar">
+    <h2 id="viewTitle">Newest poll vs. previous poll</h2>
+
+    <div class="controls">
+      <label id="partyLabel" hidden>
+        Party
+        <select id="partySelect"></select>
+      </label>
+
+      <button id="rangeBtn" class="toggle" hidden>
+        Last 13 months
+      </button>
+    </div>
+  </div>
+
+  <section class="chart-panel">
+    <div class="chart-wrap">
+      <canvas id="chart" aria-label="Polling chart" role="img"></canvas>
+    </div>
+
+    <div class="legend" id="customLegend"></div>
+    <p class="chart-note" id="chartNote"></p>
+  </section>
+
+  <section class="info-panel">
+    <h3>How to update this website</h3>
+    <p>
+      Edit the DATA section in the JavaScript. Add a month to
+      <code>monthlyPartyPolls</code> and/or <code>monthlyBlocs</code>.
+      Add parties to <code>parties</code>, including their colours and
+      political blocs. Update <code>latestComparison</code> and
+      <code>electionResults</code> when you have new figures.
+      Use <code>null</code> for missing figures.
+    </p>
+  </section>
+</main>
+
+<footer>
+  Polling figures are based on the supplied Tushtoan data.
+  Chart.js is loaded from a CDN, so an internet connection is required.
+</footer>
+
+<script>
+/* ================================================================
+   DATA SECTION
+   This is the main section you will edit when adding new polls.
+   ================================================================ */
+
+/* Party colours and political-bloc assignments.
+   To add a party, create a new object with a unique ID. */
+const parties = [
+  {id:"BS",name:"BS",color:"#d62828",bloc:"Left"},
+  {id:"RC",name:"RC",color:"#8b0000",bloc:"Left"},
+  {id:"SvT",name:"SvT",color:"#e76f51",bloc:"Left"},
+  {id:"MV",name:"MV",color:"#b56576",bloc:"Centre"},
+  {id:"NS",name:"NS",color:"#2a9d8f",bloc:"Left"},
+  {id:"L",name:"Levitatie",color:"#c9184a",bloc:"Left"},
+  {id:"UFT",name:"UFT",color:"#2878b5",bloc:"Centre"},
+  {id:"FUC",name:"FUC",color:"#57a0d3",bloc:"Centre"},
+  {id:"RR",name:"RR",color:"#6c757d",bloc:"Right"},
+  {id:"PUL",name:"PUL",color:"#343a40",bloc:"Right"},
+  {id:"BCB!",name:"BCB!",color:"#7f5539",bloc:"Right"},
+  {id:"NEE25",name:"NEE25",color:"#9c6644",bloc:"Centre"},
+  {id:"X",name:"X",color:"#495057",bloc:"Right"},
+  {id:"TVT",name:"TVT",color:"#7209b7",bloc:"Left"},
+  {id:"NAPP",name:"NAPP",color:"#264653",bloc:"Right"},
+  {id:"VB",name:"VB",color:"#a4161a",bloc:"Right"},
+  {id:"Volt",name:"Volt",color:"#e9c46a",bloc:"Centre"},
+  {id:"FP",name:"FP",color:"#4361ee",bloc:"Left"},
+  {id:"MM",name:"MM",color:"#6a994e",bloc:"Centre"},
+  {id:"PP",name:"PP",color:"#f4a261",bloc:"Right"},
+  {id:"LVT",name:"LVT",color:"#8338ec",bloc:"Centre"},
+  {id:"PPTU",name:"PPTU",color:"#3a86ff",bloc:"Centre"},
+  {id:"RTFP",name:"RTFP",color:"#023e8a",bloc:"Right"}
+];
+
+/* Historical party polls.
+   Each row is one month. Change the month and figures as needed.
+   A null value means that no figure was supplied. */
+const monthlyPartyPolls = [
+  {month:"Mar 2025",BS:81,RC:69,SvT:53,MV:44,NS:20,L:72,UFT:null,FUC:16,RR:null,PUL:24,"BCB!":18,NEE25:null,X:38,TVT:null,NAPP:null,VB:null,Volt:null,FP:null,MM:null,PP:null,LVT:null,PPTU:null,RTFP:null},
+  {month:"Apr 2025",BS:78,RC:73,SvT:49,MV:44,NS:34,L:63,UFT:null,FUC:22,RR:null,PUL:25,"BCB!":16,NEE25:null,X:36,TVT:null,NAPP:null,VB:null,Volt:null,FP:null,MM:null,PP:null,LVT:null,PPTU:null,RTFP:null},
+  {month:"May 2025",BS:66,RC:51,SvT:50,MV:35,NS:31,L:29,UFT:28,FUC:24,RR:23,PUL:19,"BCB!":17,NEE25:16,X:15,TVT:15,NAPP:11,VB:9,Volt:null,FP:null,MM:null,PP:null,LVT:null,PPTU:null,RTFP:null},
+  {month:"Jun 2025",BS:52,RC:50,SvT:37,MV:26,NS:31,L:15,UFT:25,FUC:16,RR:33,PUL:10,"BCB!":12,NEE25:20,X:12,TVT:19,NAPP:33,VB:7,Volt:21,FP:3,MM:1,PP:null,LVT:null,PPTU:null,RTFP:null},
+  {month:"Jul 2025",BS:67,RC:50,SvT:42,MV:39,NS:32,L:30,UFT:26,FUC:25,RR:47,PUL:8,"BCB!":17,NEE25:28,X:9,TVT:15,NAPP:26,VB:3,Volt:23,FP:1,MM:0,PP:null,LVT:null,PPTU:null,RTFP:null},
+  {month:"Aug 2025",BS:74,RC:72,SvT:47,MV:46,NS:39,L:42,UFT:24,FUC:26,RR:32,PUL:10,"BCB!":11,NEE25:29,X:11,TVT:13,NAPP:19,VB:2,Volt:26,FP:5,MM:0,PP:2,LVT:null,PPTU:null,RTFP:null},
+  {month:"Sep 2025",BS:59,RC:60,SvT:52,MV:40,NS:29,L:34,UFT:26,FUC:28,RR:23,PUL:13,"BCB!":15,NEE25:20,X:10,TVT:11,NAPP:20,VB:3,Volt:19,FP:0,MM:2,PP:8,LVT:null,PPTU:null,RTFP:null},
+  {month:"Oct 2025",BS:46,RC:47,SvT:48,MV:36,NS:28,L:24,UFT:25,FUC:23,RR:19,PUL:20,"BCB!":16,NEE25:16,X:7,TVT:10,NAPP:20,VB:7,Volt:12,FP:4,MM:null,PP:12,LVT:22,PPTU:null,RTFP:null},
+  {month:"Nov 2025",BS:42,RC:41,SvT:52,MV:25,NS:25,L:16,UFT:36,FUC:32,RR:11,PUL:15,"BCB!":12,NEE25:11,X:8,TVT:24,NAPP:23,VB:8,Volt:21,FP:7,MM:null,PP:16,LVT:25,PPTU:null,RTFP:null},
+  {month:"Dec 2025",BS:40,RC:45,SvT:64,MV:20,NS:19,L:8,UFT:40,FUC:40,RR:5,PUL:17,"BCB!":10,NEE25:5,X:4,TVT:24,NAPP:27,VB:9,Volt:34,FP:7,MM:null,PP:19,LVT:20,PPTU:null,RTFP:null},
+  {month:"Jan 2026",BS:32,RC:36,SvT:45,MV:26,NS:21,L:10,UFT:44,FUC:34,RR:8,PUL:17,"BCB!":9,NEE25:4,X:5,TVT:22,NAPP:28,VB:6,Volt:28,FP:4,MM:null,PP:16,LVT:15,PPTU:null,RTFP:null},
+  {month:"Feb 2026",BS:28,RC:44,SvT:58,MV:20,NS:22,L:12,UFT:43,FUC:28,RR:15,PUL:15,"BCB!":8,NEE25:6,X:5,TVT:26,NAPP:36,VB:7,Volt:33,FP:10,MM:null,PP:18,LVT:12,PPTU:null,RTFP:null},
+  {month:"Mar 2026",BS:21,RC:62,SvT:62,MV:24,NS:18,L:11,UFT:60,FUC:20,RR:17,PUL:13,"BCB!":4,NEE25:2,X:2,TVT:20,NAPP:46,VB:7,Volt:33,FP:12,MM:null,PP:17,LVT:3,PPTU:null,RTFP:null},
+  {month:"Apr 2026",BS:19,RC:59,SvT:56,MV:23,NS:17,L:10,UFT:68,FUC:16,RR:17,PUL:10,"BCB!":3,NEE25:2,X:1,TVT:17,NAPP:50,VB:5,Volt:35,FP:13,MM:null,PP:16,LVT:12,PPTU:null,RTFP:null},
+  {month:"May 2026",BS:18,RC:56,SvT:48,MV:21,NS:16,L:9,UFT:72,FUC:17,RR:16,PUL:10,"BCB!":2,NEE25:1,X:1,TVT:15,NAPP:61,VB:6,Volt:39,FP:13,MM:null,PP:15,LVT:13,PPTU:null,RTFP:null},
+  {month:"Jun 2026",BS:19,RC:68,SvT:44,MV:20,NS:17,L:11,UFT:66,FUC:16,RR:14,PUL:9,"BCB!":1,NEE25:1,X:1,TVT:16,NAPP:63,VB:7,Volt:36,FP:15,MM:null,PP:14,LVT:11,PPTU:1,RTFP:null},
+  {month:"Jul 2026",BS:16,RC:76,SvT:41,MV:21,NS:18,L:12,UFT:62,FUC:15,RR:11,PUL:7,"BCB!":0,NEE25:0,X:null,TVT:18,NAPP:67,VB:8,Volt:34,FP:16,MM:null,PP:11,LVT:9,PPTU:2,RTFP:6},
+  {month:"Aug 2026",BS:15,RC:78,SvT:43,MV:19,NS:17,L:11,UFT:60,FUC:14,RR:9,PUL:5,"BCB!":1,NEE25:1,X:null,TVT:17,NAPP:72,VB:9,Volt:40,FP:16,MM:null,PP:10,LVT:7,PPTU:1,RTFP:5},
+  {month:"Sep 2026",BS:14,RC:74,SvT:41,MV:18,NS:16,L:10,UFT:74,FUC:13,RR:8,PUL:5,"BCB!":1,NEE25:1,X:null,TVT:16,NAPP:67,VB:8,Volt:47,FP:15,MM:null,PP:9,LVT:6,PPTU:1,RTFP:6},
+  {month:"Oct 2026",BS:13,RC:77,SvT:40,MV:15,NS:16,L:7,UFT:77,FUC:12,RR:7,PUL:3,"BCB!":0,NEE25:0,X:null,TVT:15,NAPP:77,VB:7,Volt:45,FP:13,MM:null,PP:11,LVT:8,PPTU:1,RTFP:6}
+];
+
+/* Newest poll versus previous poll.
+   The values are entered in the same order as your supplied comparison:
+   newest = Series 1, previous = Series 2. */
+const latestComparison = {
+  newest: {
+    SvT:41, BS:14, RC:74, UFT:74, NS:16, FUC:13, MV:18,
+    TVT:16, NAPP:67, Volt:47, LVT:6, Levitatie:10, PP:9,
+    PUL:5, "BCB!":1, RR:8, NEE25:1, VB:8, RTFP:6, FP:15, PPTU:1
+  },
+  previous: {
+    SvT:40, BS:13, RC:77, UFT:77, NS:16, FUC:13, MV:15,
+    TVT:15, NAPP:77, Volt:45, LVT:8, Levitatie:7, PP:11,
+    PUL:3, "BCB!":0, RR:7, NEE25:0, VB:7, RTFP:6, FP:13, PPTU:1
+  }
+};
+
+/* Previous election seat totals.
+   null means the election figure has not been entered yet. */
+const electionResults = {
+  RC:69,
+  UFT:63,
+  NAPP:57,
+  SvT:53,
+  Volt:27,
+  BS:21,
+  FUC:19,
+  NS:18,
+  MV:17,
+  RR:null,
+  PUL:null,
+  "BCB!":null,
+  NEE25:null,
+  X:null,
+  TVT:null,
+  VB:null,
+  FP:null,
+  MM:null,
+  PP:null,
+  LVT:null,
+  PPTU:null,
+  RTFP:null,
+  L:null
+};
+
+/* Left, centre and right polling totals. */
+const monthlyBlocs = [
+  {month:"Mar 2025",Left:295,Centre:60,Right:109},
+  {month:"Apr 2025",Left:297,Centre:66,Right:87},
+  {month:"May 2025",Left:251,Centre:103,Right:96},
+  {month:"Jun 2025",Left:236,Centre:87,Right:116},
+  {month:"Jul 2025",Left:263,Centre:118,Right:107},
+  {month:"Aug 2025",Left:322,Centre:125,Right:83},
+  {month:"Sep 2025",Left:275,Centre:114,Right:83},
+  {month:"Oct 2025",Left:238,Centre:122,Right:92},
+  {month:"Nov 2025",Left:252,Centre:129,Right:70},
+  {month:"Dec 2025",Left:269,Centre:125,Right:64},
+  {month:"Jan 2026",Left:220,Centre:117,Right:67},
+  {month:"Feb 2026",Left:258,Centre:115,Right:79},
+  {month:"Mar 2026",Left:263,Centre:109,Right:84},
+  {month:"Apr 2026",Left:247,Centre:121,Right:82},
+  {month:"May 2026",Left:235,Centre:124,Right:91},
+  {month:"Jun 2026",Left:247,Centre:115,Right:88},
+  {month:"Jul 2026",Left:250,Centre:109,Right:102},
+  {month:"Aug 2026",Left:256,Centre:102,Right:92},
+  {month:"Sep 2026",Left:250,Centre:107,Right:93}
+];
+
+/* ====================== END OF DATA SECTION ====================== */
+
+
+/* ================================================================
+   CHART AND MENU LOGIC
+   Normally you should not need to change this section.
+   ================================================================ */
+
+const partyById = Object.fromEntries(parties.map(p => [p.id, p]));
+const chartCanvas = document.getElementById("chart");
+const titleEl = document.getElementById("viewTitle");
+const noteEl = document.getElementById("chartNote");
+const legendEl = document.getElementById("customLegend");
+const partySelect = document.getElementById("partySelect");
+const partyLabel = document.getElementById("partyLabel");
+const rangeBtn = document.getElementById("rangeBtn");
+
+let currentView = "polls";
+let last13 = false;
+let chart = null;
+
+const blocColors = {
+  Left: "#d62828",
+  Centre: "#e9a23b",
+  Right: "#2878b5"
+};
+
+const fmt = value =>
+  value === null || value === undefined ? "—" : value;
+
+function dataset(label, data, color, extra = {}) {
+  return {
+    label,
+    data,
+    borderColor: color,
+    backgroundColor: color,
+    ...extra
+  };
+}
+
+function drawLegend(items) {
+  legendEl.innerHTML = "";
+
+  items.forEach(item => {
+    const node = document.createElement("span");
+    node.className = "legend-item";
+
+    const swatch = document.createElement("i");
+    swatch.className = "swatch";
+    swatch.style.background = item.color;
+
+    const label = document.createElement("span");
+    label.textContent = item.label;
+
+    node.append(swatch, label);
+    legendEl.appendChild(node);
+  });
+}
+
+function makeChart(type, labels, datasets, opts = {}) {
+  if (chart) chart.destroy();
+
+  chart = new Chart(chartCanvas, {
+    type,
+    data: { labels, datasets },
+
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: "index",
+        intersect: false
+      },
+
+      plugins: {
+        legend: { display: false },
+
+        tooltip: {
+          callbacks: {
+            label: context =>
+              `${context.dataset.label}: ${fmt(context.parsed.y)}`
+          }
+        }
+      },
+
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: {
+            maxRotation: 45,
+            minRotation: 0,
+            autoSkip: true,
+            maxTicksLimit: 20
+          }
+        },
+
+        y: {
+          beginAtZero: true,
+          grid: { color: "#edf0f5" },
+          title: {
+            display: !!opts.yTitle,
+            text: opts.yTitle || ""
+          }
+        }
+      },
+
+      elements: {
+        line: { borderWidth: 2.5 },
+        point: {
+          radius: type === "line" ? 2.5 : 3,
+          hoverRadius: 5
+        }
+      },
+
+      ...opts.options
+    }
+  });
+
+  drawLegend(
+    datasets.map(d => ({
+      label: d.label,
+      color: d.borderColor || d.backgroundColor
+    }))
+  );
+}
+
+/* The historical dataset uses "L" for Levitatie.
+   The latest comparison table spells out "Levitatie". */
+function comparisonValue(series, id) {
+  const key = id === "L" ? "Levitatie" : id;
+  return series[key];
+}
+
+function renderPollComparison() {
+  titleEl.textContent = "Newest poll vs. previous poll";
+
+  const order = parties
+    .map(p => p.id)
+    .filter(id =>
+      comparisonValue(latestComparison.newest, id) !== undefined ||
+      comparisonValue(latestComparison.previous, id) !== undefined
+    );
+
+  const labels = order.map(id => partyById[id]?.name || id);
+
+  const newest = order.map(id =>
+    comparisonValue(latestComparison.newest, id) ?? null
+  );
+
+  const previous = order.map(id =>
+    comparisonValue(latestComparison.previous, id) ?? null
+  );
+
+  makeChart("bar", labels, [
+    dataset("Newest poll", newest, "#2459d3", {
+      borderRadius: 5,
+      categoryPercentage: .72,
+      barPercentage: .85
+    }),
+
+    dataset("Previous poll", previous, "#aeb8c8", {
+      borderRadius: 5,
+      categoryPercentage: .72,
+      barPercentage: .85
+    })
+  ], {
+    yTitle: "Poll figure",
+
+    options: {
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: {
+            maxRotation: 55,
+            minRotation: 0,
+            autoSkip: false
+          }
+        },
+
+        y: {
+          beginAtZero: true,
+          grid: { color: "#edf0f5" }
+        }
+      }
+    }
+  });
+
+  noteEl.textContent =
+    "Series 1 is the newest poll and Series 2 is the previous poll, " +
+    "using the side-by-side figures you supplied.";
+}
+
+function renderElection() {
+  titleEl.textContent = "Newest poll vs. previous election";
+
+  const order = parties
+    .map(p => p.id)
+    .filter(id =>
+      latestComparison.newest[id] !== undefined &&
+      electionResults[id] !== null &&
+      electionResults[id] !== undefined
+    );
+
+  const labels = order.map(id => partyById[id]?.name || id);
+
+  makeChart("bar", labels, [
+    dataset(
+      "Newest poll",
+      order.map(id => latestComparison.newest[id]),
+      "#2459d3",
+      {
+        borderRadius: 5,
+        categoryPercentage: .72,
+        barPercentage: .85
+      }
+    ),
+
+    dataset(
+      "Previous election",
+      order.map(id => electionResults[id]),
+      "#d4a72c",
+      {
+        borderRadius: 5,
+        categoryPercentage: .72,
+        barPercentage: .85
+      }
+    )
+  ], {
+    yTitle: "Poll figure / seats",
+
+    options: {
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: {
+            maxRotation: 55,
+            minRotation: 0,
+            autoSkip: false
+          }
+        },
+
+        y: {
+          beginAtZero: true,
+          grid: { color: "#edf0f5" }
+        }
+      }
+    }
+  });
+
+  noteEl.textContent =
+    "Only parties with entered election figures are displayed. " +
+    "Polling figures and election seats are different measures. " +
+    "Add more results to electionResults in the DATA section.";
+}
+
+function renderParties() {
+  titleEl.textContent = "Party developments";
+  partyLabel.hidden = false;
+  rangeBtn.hidden = false;
+
+  const id = partySelect.value || parties[0].id;
+  const party = partyById[id] || {
+    name: id,
+    color: "#2459d3"
+  };
+
+  let rows = monthlyPartyPolls;
+
+  if (last13) {
+    rows = rows.slice(-13);
+  }
+
+  const values = rows.map(row =>
+    row[id] === undefined ? null : row[id]
+  );
+
+  makeChart("line", rows.map(row => row.month), [
+    dataset(party.name, values, party.color, {
+      tension: .38,
+      cubicInterpolationMode: "monotone",
+      spanGaps: false,
+      pointBackgroundColor: party.color,
+      fill: false
+    })
+  ], {
+    yTitle: "Poll figure"
+  });
+
+  noteEl.textContent =
+    `Monthly polling for ${party.name}. Smooth curves are enabled. ` +
+    "Missing values remain gaps rather than being invented. " +
+    (last13
+      ? "Showing the last 13 available monthly entries."
+      : "Showing all available monthly entries.");
+}
+
+function renderBlocs() {
+  titleEl.textContent = "Developments: left, centre & right";
+  partyLabel.hidden = true;
+  rangeBtn.hidden = false;
+
+  let rows = monthlyBlocs;
+
+  if (last13) {
+    rows = rows.slice(-13);
+  }
+
+  const definitions = [
+    ["Left", blocColors.Left],
+    ["Centre", blocColors.Centre],
+    ["Right", blocColors.Right]
+  ];
+
+  const datasets = definitions.map(([key, color]) =>
+    dataset(
+      key,
+      rows.map(row => row[key] ?? null),
+      color,
+      {
+        tension: .38,
+        cubicInterpolationMode: "monotone",
+        spanGaps: false,
+        pointBackgroundColor: color,
+        fill: false
+      }
+    )
+  );
+
+  makeChart(
+    "line",
+    rows.map(row => row.month),
+    datasets,
+    { yTitle: "Bloc total" }
+  );
+
+  noteEl.textContent =
+    "Bloc totals from your supplied table. " +
+    (last13
+      ? "Showing the last 13 available monthly entries."
+      : "Showing all available monthly entries.") +
+    " The current source data ends in September 2026.";
+}
+
+function render() {
+  document.querySelectorAll(".menu-btn").forEach(button => {
+    button.classList.toggle(
+      "active",
+      button.dataset.view === currentView
+    );
+  });
+
+  if (currentView === "polls") {
+    partyLabel.hidden = true;
+    rangeBtn.hidden = true;
+    renderPollComparison();
+  }
+
+  if (currentView === "election") {
+    partyLabel.hidden = true;
+    rangeBtn.hidden = true;
+    renderElection();
+  }
+
+  if (currentView === "parties") {
+    renderParties();
+  }
+
+  if (currentView === "blocs") {
+    renderBlocs();
+  }
+
+  rangeBtn.textContent = last13
+    ? "Show all months"
+    : "Last 13 months";
+
+  rangeBtn.classList.toggle("active", last13);
+}
+
+function populatePartySelect() {
+  partySelect.innerHTML = "";
+
+  parties.forEach(party => {
+    const option = document.createElement("option");
+    option.value = party.id;
+    option.textContent = party.name;
+    partySelect.appendChild(option);
+  });
+}
+
+/* Menu buttons */
+document.querySelectorAll(".menu-btn").forEach(button => {
+  button.addEventListener("click", () => {
+    currentView = button.dataset.view;
+    render();
+  });
+});
+
+/* Party selector */
+partySelect.addEventListener("change", render);
+
+/* Last-13-month filter */
+rangeBtn.addEventListener("click", () => {
+  last13 = !last13;
+  render();
+});
+
+/* Start the website */
+populatePartySelect();
+render();
+</script>
+</body>
+</html>
