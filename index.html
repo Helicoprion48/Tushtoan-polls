@@ -1,10 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tushto Poll Tracker</title>
-
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 
 <style>
@@ -156,9 +156,7 @@ select, .toggle, input[type="number"] {
   white-space: nowrap;
 }
 
-.months-control input {
-  width: 86px;
-}
+.months-control input { width: 86px; }
 
 .toggle.active {
   background: var(--accent);
@@ -166,10 +164,7 @@ select, .toggle, input[type="number"] {
   border-color: var(--accent);
 }
 
-/* Multi-party picker */
-.party-picker {
-  position: relative;
-}
+.party-picker { position: relative; }
 
 .party-picker-panel {
   position: absolute;
@@ -230,9 +225,7 @@ select, .toggle, input[type="number"] {
   height: 10px;
 }
 
-.party-option span:last-child {
-  overflow-wrap: anywhere;
-}
+.party-option span:last-child { overflow-wrap: anywhere; }
 
 .chart-panel { padding: 18px 18px 12px; }
 
@@ -301,7 +294,6 @@ footer {
   .menu-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-
   .chart-wrap { height: 420px; }
 }
 
@@ -329,7 +321,6 @@ footer {
 <main>
   <section class="menu-panel">
     <p class="eyebrow">Choose a view</p>
-
     <div class="menu-grid">
       <button class="menu-btn active" data-view="polls">
         <strong>Newest vs. previous poll</strong>
@@ -355,7 +346,6 @@ footer {
 
   <div class="toolbar">
     <h2 id="viewTitle">Newest poll vs. previous poll</h2>
-
     <div class="controls">
       <div id="partyPicker" class="party-picker" hidden>
         <button id="partyPickerToggle" class="toggle" type="button"
@@ -368,15 +358,14 @@ footer {
             <button id="selectAllParties" type="button">Select all</button>
             <button id="clearAllParties" type="button">Clear all</button>
           </div>
-
           <div id="partyCheckboxes" class="party-checkboxes"></div>
         </div>
       </div>
 
       <label id="monthsControl" class="months-control" hidden>
         <span>Months shown</span>
-        <input id="monthsInput" type="number" min="1" max="999" value="13"
-               step="1" inputmode="numeric"
+        <input id="monthsInput" type="number" min="1" max="999"
+               value="13" step="1" inputmode="numeric"
                aria-label="Number of months to show">
       </label>
     </div>
@@ -386,7 +375,6 @@ footer {
     <div class="chart-wrap">
       <canvas id="chart" aria-label="Polling chart" role="img"></canvas>
     </div>
-
     <div class="legend" id="customLegend"></div>
     <p class="chart-note" id="chartNote"></p>
   </section>
@@ -400,11 +388,8 @@ footer {
 <script>
 /* ================================================================
    DATA SECTION
-   This is the main section you will edit when adding new polls.
    ================================================================ */
 
-/* Party colours and political-bloc assignments.
-   To add a party, create a new object with a unique ID. */
 const parties = [
   {id:"RC",name:"RC",color:"#ff0000",bloc:"Left"},
   {id:"UFT",name:"UFT",color:"#fcdf48",bloc:"Centre"},
@@ -432,8 +417,7 @@ const parties = [
   {id:"MM",name:"MM",color:"#ff9977",bloc:"Right"}
 ];
 
-/* Historical party polls.
-   Each row is one month. Missing figures are null. */
+/* Historical party polls: one row per month. */
 const monthlyPartyPolls = [
   {month:"Mar 2025",BS:81,RC:69,SvT:53,MV:44,NS:20,L:72,UFT:null,FUC:16,RR:null,PUL:24,"BCB!":18,NEE25:null,X:38,TVT:null,NAPP:null,VB:null,Volt:null,FP:null,MM:null,PP:null,LVT:null,PPTU:null,RTFP:null,D26:null},
   {month:"Apr 2025",BS:78,RC:73,SvT:49,MV:44,NS:34,L:63,UFT:null,FUC:22,RR:null,PUL:25,"BCB!":16,NEE25:null,X:36,TVT:null,NAPP:null,VB:null,Volt:null,FP:null,MM:null,PP:null,LVT:null,PPTU:null,RTFP:null,D26:null},
@@ -457,18 +441,19 @@ const monthlyPartyPolls = [
   {month:"Oct 2026",BS:13,RC:77,SvT:40,MV:15,NS:16,L:7,UFT:77,FUC:12,RR:7,PUL:3,"BCB!":null,NEE25:null,X:null,TVT:15,NAPP:77,VB:7,Volt:45,FP:13,MM:null,PP:11,LVT:8,PPTU:1,RTFP:6,D26:null}
 ];
 
-/* Latest poll versus previous poll.
-   newest = Series 1, previous = Series 2. */
+/* October 2026 = newest poll; September 2026 = previous poll. */
 const latestComparison = {
   newest: {
-    SvT:41, BS:14, RC:74, UFT:74, NS:16, FUC:13, MV:18,
-    TVT:16, NAPP:67, Volt:47, LVT:6, Levitatie:10, PP:9,
-    PUL:5, "BCB!":1, RR:8, NEE25:1, VB:8, RTFP:6, FP:15, PPTU:1
+    SvT:40, BS:13, RC:77, UFT:77, NS:16, FUC:12, MV:15,
+    TVT:15, NAPP:77, Volt:45, LVT:8, Levitatie:7, PP:11,
+    PUL:3, "BCB!":null, RR:7, NEE25:null, X:null,
+    VB:7, RTFP:6, FP:13, PPTU:1
   },
   previous: {
-    SvT:40, BS:13, RC:77, UFT:77, NS:16, FUC:13, MV:15,
-    TVT:15, NAPP:77, Volt:45, LVT:8, Levitatie:7, PP:11,
-    PUL:3, "BCB!":0, RR:7, NEE25:0, VB:7, RTFP:6, FP:13, PPTU:1
+    SvT:41, BS:14, RC:74, UFT:74, NS:16, FUC:13, MV:18,
+    TVT:16, NAPP:67, Volt:47, LVT:6, Levitatie:10, PP:9,
+    PUL:5, "BCB!":1, RR:8, NEE25:1, X:null,
+    VB:8, RTFP:6, FP:15, PPTU:1
   }
 };
 
@@ -520,12 +505,8 @@ const monthlyBlocs = [
   {month:"Sep 2026",Left:250,Centre:107,Right:93}
 ];
 
-/* ====================== END OF DATA SECTION ====================== */
-
-
 /* ================================================================
    CHART AND MENU LOGIC
-   Normally you should not need to change this section.
    ================================================================ */
 
 const partyById = Object.fromEntries(parties.map(p => [p.id, p]));
@@ -547,8 +528,6 @@ const monthsInput = document.getElementById("monthsInput");
 let currentView = "polls";
 let chart = null;
 
-/* Default selection: RC.
-   Replace these IDs to change the parties selected by default. */
 const selectedPartyIds = new Set(["RC", "UFT", "NAPP", "SvT", "Volt"]);
 
 const blocColors = {
@@ -595,19 +574,15 @@ function makeChart(type, labels, datasets, opts = {}) {
   chart = new Chart(chartCanvas, {
     type,
     data: { labels, datasets },
-
     options: {
       responsive: true,
       maintainAspectRatio: false,
-
       interaction: {
         mode: "index",
         intersect: false
       },
-
       plugins: {
         legend: { display: false },
-
         tooltip: {
           callbacks: {
             label: context =>
@@ -615,11 +590,9 @@ function makeChart(type, labels, datasets, opts = {}) {
           }
         }
       },
-
       scales: {
         x: {
           grid: { display: false },
-
           ticks: {
             maxRotation: 45,
             minRotation: 0,
@@ -627,27 +600,22 @@ function makeChart(type, labels, datasets, opts = {}) {
             maxTicksLimit: 20
           }
         },
-
         y: {
           beginAtZero: true,
           grid: { color: "#edf0f5" },
-
           title: {
             display: !!opts.yTitle,
             text: opts.yTitle || ""
           }
         }
       },
-
       elements: {
         line: { borderWidth: 2.5 },
-
         point: {
           radius: type === "line" ? 2.5 : 3,
           hoverRadius: 5
         }
       },
-
       ...opts.options
     }
   });
@@ -660,8 +628,7 @@ function makeChart(type, labels, datasets, opts = {}) {
   );
 }
 
-/* The historical data uses "L" for Levitatie.
-   The latest comparison table spells the party name out. */
+/* Historical data uses "L" for Levitatie. */
 function comparisonValue(series, id) {
   const key = id === "L" ? "Levitatie" : id;
   return series[key];
@@ -688,20 +655,18 @@ function renderPollComparison() {
   );
 
   makeChart("bar", labels, [
-  dataset("Previous poll", previous, "#6a63a6", {
-    borderRadius: 5,
-    categoryPercentage: .72,
-    barPercentage: .85
-  }),
-
-  dataset("Newest poll", newest, "#ff9a0a", {
-    borderRadius: 5,
-    categoryPercentage: .72,
-    barPercentage: .85
-  })
-], {
+    dataset("Previous poll", previous, "#6a63a6", {
+      borderRadius: 5,
+      categoryPercentage: .72,
+      barPercentage: .85
+    }),
+    dataset("Newest poll", newest, "#ff9a0a", {
+      borderRadius: 5,
+      categoryPercentage: .72,
+      barPercentage: .85
+    })
+  ], {
     yTitle: "Poll figure",
-
     options: {
       scales: {
         x: {
@@ -721,9 +686,8 @@ function renderPollComparison() {
   });
 
   noteEl.textContent =
-    "Blue-grey bars show the previous poll; orange bars show the newest poll.";
+    "Purple-blue-grey bars show the previous poll (September 2026); orange bars show the newest poll (October 2026).";
 }
-
 
 function renderElection() {
   titleEl.textContent = "Newest poll vs. previous election";
@@ -738,31 +702,29 @@ function renderElection() {
 
   const labels = order.map(id => partyById[id]?.name || id);
 
-makeChart("bar", labels, [
-  dataset(
-    "Previous election",
-    order.map(id => electionResults[id]),
-    "#6a63a6",
-    {
-      borderRadius: 5,
-      categoryPercentage: .72,
-      barPercentage: .85
-    }
-  ),
-
-  dataset(
-    "Newest poll",
-    order.map(id => comparisonValue(latestComparison.newest, id)),
-    "#ff9a0a",
-    {
-      borderRadius: 5,
-      categoryPercentage: .72,
-      barPercentage: .85
-    }
-  )
-], {
+  makeChart("bar", labels, [
+    dataset(
+      "Previous election",
+      order.map(id => electionResults[id]),
+      "#6a63a6",
+      {
+        borderRadius: 5,
+        categoryPercentage: .72,
+        barPercentage: .85
+      }
+    ),
+    dataset(
+      "Newest poll",
+      order.map(id => comparisonValue(latestComparison.newest, id)),
+      "#ff9a0a",
+      {
+        borderRadius: 5,
+        categoryPercentage: .72,
+        barPercentage: .85
+      }
+    )
+  ], {
     yTitle: "Poll figure / seats",
-
     options: {
       scales: {
         x: {
@@ -782,18 +744,17 @@ makeChart("bar", labels, [
   });
 
   noteEl.textContent =
-    "Blue-grey bars show the previous election; orange bars show the newest poll. " +
+    "Purple-blue-grey bars show the previous election; orange bars show the newest poll (October 2026). " +
     "Polling figures and election seats are different measures.";
-}/* Read the requested month count. Default to 13 if the input is invalid. */
+}
+
 function getRequestedMonths() {
   const value = Number.parseInt(monthsInput.value, 10);
-
   return Number.isInteger(value) && value > 0
     ? Math.min(value, 999)
     : 13;
 }
 
-/* Return only the most recent requested number of months. */
 function rowsForSelectedMonthCount(rows) {
   return rows.slice(-getRequestedMonths());
 }
@@ -802,13 +763,11 @@ function monthRangeDescription(rows, requestedMonths) {
   if (rows.length < requestedMonths) {
     return `Showing all ${rows.length} available monthly entries; ${requestedMonths} requested.`;
   }
-
   return `Showing the most recent ${rows.length} monthly entries.`;
 }
 
 function renderParties() {
   titleEl.textContent = "Party developments";
-
   partyPicker.hidden = false;
   monthsControl.hidden = false;
 
@@ -855,7 +814,6 @@ function renderParties() {
 
 function renderBlocs() {
   titleEl.textContent = "Developments: left, centre & right";
-
   partyPicker.hidden = true;
   monthsControl.hidden = false;
 
@@ -891,7 +849,7 @@ function renderBlocs() {
   );
 
   noteEl.textContent =
-    "Bloc totals from your supplied table. " +
+    "Bloc totals from the supplied table. " +
     monthRangeDescription(rows, requestedMonths) +
     " The current source data ends in September 2026.";
 }
@@ -983,7 +941,6 @@ function closePartyPicker() {
   partyPickerToggle.setAttribute("aria-expanded", "false");
 }
 
-/* Main menu buttons */
 document.querySelectorAll(".menu-btn").forEach(button => {
   button.addEventListener("click", () => {
     currentView = button.dataset.view;
@@ -991,18 +948,14 @@ document.querySelectorAll(".menu-btn").forEach(button => {
   });
 });
 
-/* Open or close the multi-party selector */
 partyPickerToggle.addEventListener("click", () => {
   const willOpen = partyPickerPanel.hidden;
-
   partyPickerPanel.hidden = !willOpen;
   partyPickerToggle.setAttribute("aria-expanded", String(willOpen));
 });
 
-/* Select all parties */
 selectAllPartiesButton.addEventListener("click", () => {
   parties.forEach(party => selectedPartyIds.add(party.id));
-
   populatePartyPicker();
 
   if (currentView === "parties") {
@@ -1010,10 +963,8 @@ selectAllPartiesButton.addEventListener("click", () => {
   }
 });
 
-/* Clear the party selection */
 clearAllPartiesButton.addEventListener("click", () => {
   selectedPartyIds.clear();
-
   populatePartyPicker();
 
   if (currentView === "parties") {
@@ -1021,15 +972,12 @@ clearAllPartiesButton.addEventListener("click", () => {
   }
 });
 
-/* Close the dropdown when clicking outside it */
 document.addEventListener("click", event => {
   if (!partyPicker.contains(event.target)) {
     closePartyPicker();
   }
 });
 
-/* Update the charts when the month count changes.
-   The standard is 13 months; the maximum is 999. */
 monthsInput.addEventListener("change", () => {
   const value = Number.parseInt(monthsInput.value, 10);
 
@@ -1046,7 +994,6 @@ monthsInput.addEventListener("change", () => {
   }
 });
 
-/* Start the website with 13 months shown by default. */
 monthsInput.value = "13";
 populatePartyPicker();
 render();
