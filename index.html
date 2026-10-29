@@ -371,19 +371,6 @@ footer {
     <div class="legend" id="customLegend"></div>
     <p class="chart-note" id="chartNote"></p>
   </section>
-
-  <section class="info-panel">
-    <h3>How to update this website</h3>
-    <p>
-      Edit the DATA section in the JavaScript. Add a month to
-      <code>monthlyPartyPolls</code> and/or <code>monthlyBlocs</code>.
-      Add parties to <code>parties</code>, including their colours and
-      political blocs. In Party developments, use <strong>Choose parties</strong>
-      to show several party lines together. Update <code>latestComparison</code>
-      and <code>electionResults</code> when you have new figures.
-      Use <code>null</code> for missing figures.
-    </p>
-  </section>
 </main>
 
 <footer>
@@ -533,7 +520,7 @@ const clearAllPartiesButton = document.getElementById("clearAllParties");
 const rangeBtn = document.getElementById("rangeBtn");
 
 let currentView = "polls";
-let last13 = false;
+let last13 = true;
 let chart = null;
 
 /* Start with RC selected; other parties can be ticked on or off. */
