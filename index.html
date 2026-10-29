@@ -689,12 +689,14 @@ function renderPollComparison() {
 
   makeChart("bar", labels, [
     dataset("Newest poll", newest, "#ff9a0a", {
+      order: 1,
       borderRadius: 5,
       categoryPercentage: .72,
       barPercentage: .85
     }),
 
     dataset("Previous poll", previous, "#6a63a6", {
+      order: 2,
       borderRadius: 5,
       categoryPercentage: .72,
       barPercentage: .85
@@ -706,14 +708,12 @@ function renderPollComparison() {
       scales: {
         x: {
           grid: { display: false },
-
           ticks: {
             maxRotation: 55,
             minRotation: 0,
             autoSkip: false
           }
         },
-
         y: {
           beginAtZero: true,
           grid: { color: "#edf0f5" }
@@ -723,8 +723,7 @@ function renderPollComparison() {
   });
 
   noteEl.textContent =
-    "Series 1 is the newest poll and Series 2 is the previous poll, " +
-    "using the side-by-side figures you supplied.";
+    "The newest poll is shown first (left); the previous poll is shown second (right).";
 }
 
 function renderElection() {
@@ -746,6 +745,7 @@ function renderElection() {
       order.map(id => comparisonValue(latestComparison.newest, id)),
       "#ff9a0a",
       {
+        order: 1,
         borderRadius: 5,
         categoryPercentage: .72,
         barPercentage: .85
@@ -757,6 +757,7 @@ function renderElection() {
       order.map(id => electionResults[id]),
       "#6a63a6",
       {
+        order: 2,
         borderRadius: 5,
         categoryPercentage: .72,
         barPercentage: .85
@@ -769,14 +770,12 @@ function renderElection() {
       scales: {
         x: {
           grid: { display: false },
-
           ticks: {
             maxRotation: 55,
             minRotation: 0,
             autoSkip: false
           }
         },
-
         y: {
           beginAtZero: true,
           grid: { color: "#edf0f5" }
@@ -786,11 +785,8 @@ function renderElection() {
   });
 
   noteEl.textContent =
-    "Only parties with entered election figures are displayed. " +
-    "Polling figures and election seats are different measures. " +
-    "Add more results to electionResults in the DATA section.";
+    "The newest poll is shown first (left); the previous election is shown second (right). Polling figures and election seats are different measures.";
 }
-
 /* Read the requested month count. Default to 13 if the input is invalid. */
 function getRequestedMonths() {
   const value = Number.parseInt(monthsInput.value, 10);
